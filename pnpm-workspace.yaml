@@ -1,0 +1,7 @@
+packages:
+  - 'apps/*'
+  - 'libs/shared/*'
+  - 'libs/platform/*'
+  - 'libs/client/*'
+  - 'libs/server/*'
+autoInstallPeers: true

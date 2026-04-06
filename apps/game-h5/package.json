@@ -1,0 +1,13 @@
+{
+  "name": "@workspace/game-h5",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "@workspace/bridge": "workspace:*",
+    "@workspace/data-access": "workspace:*",
+    "@workspace/state": "workspace:*",
+    "@workspace/types": "workspace:*",
+    "@workspace/web-adapter": "workspace:*",
+    "@workspace/wechat-adapter": "workspace:*"
+  }
+}

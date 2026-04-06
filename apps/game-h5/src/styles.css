@@ -1,0 +1,37 @@
+:root {
+  color-scheme: dark;
+  font-family:
+    'Noto Serif SC',
+    'LXGW WenKai Screen',
+    'PingFang SC',
+    'Microsoft YaHei',
+    serif;
+  background:
+    radial-gradient(circle at top, rgba(179, 112, 39, 0.2), transparent 30%),
+    linear-gradient(180deg, #120e0b 0%, #070605 100%);
+  color: #f6ecd4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top, rgba(179, 112, 39, 0.22), transparent 28%),
+    linear-gradient(180deg, #120e0b 0%, #070605 100%);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}

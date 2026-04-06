@@ -1,0 +1,55 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/game-h5-e2e"
+    },
+    {
+      "path": "./apps/game-h5"
+    },
+    {
+      "path": "./apps/game-server"
+    },
+    {
+      "path": "./libs/shared/contracts"
+    },
+    {
+      "path": "./libs/shared/schemas"
+    },
+    {
+      "path": "./libs/shared/types"
+    },
+    {
+      "path": "./libs/platform/bridge"
+    },
+    {
+      "path": "./libs/platform/web-adapter"
+    },
+    {
+      "path": "./libs/platform/wechat-adapter"
+    },
+    {
+      "path": "./libs/client/data-access"
+    },
+    {
+      "path": "./libs/client/state"
+    },
+    {
+      "path": "./libs/client/game-shell"
+    },
+    {
+      "path": "./libs/server/application"
+    },
+    {
+      "path": "./libs/server/domain"
+    },
+    {
+      "path": "./libs/server/db"
+    },
+    {
+      "path": "./libs/shared/reference-data"
+    }
+  ]
+}

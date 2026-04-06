@@ -1,0 +1,81 @@
+# generated: 2026-04-05 13:30:17 +0800
+# last_updated: 2026-04-06 00:18:00 +0800
+# project: 召唤之王
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: /Users/wlf/Documents/workspace/self-project/summon-king-bmad/_bmad-output/implementation-artifacts
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: '2026-04-05 13:30:17 +0800'
+last_updated: '2026-04-06 07:57:09 +0800'
+project: '召唤之王'
+project_key: 'NOKEY'
+tracking_system: 'file-system'
+story_location: '/Users/wlf/Documents/workspace/self-project/summon-king-bmad/_bmad-output/implementation-artifacts'
+
+development_status:
+  epic-1: in-progress
+  1-1-init-nx-workspace-and-shared-skeleton: done
+  1-2-establish-unified-session-and-host-boundary: review
+  1-3-implement-character-bootstrap-and-initial-grants: done
+  1-4-build-h5-entry-and-init-loading-feedback: done
+  1-5-deliver-home-guidance-and-deferred-entry-governance: done
+  epic-1-retrospective: optional
+
+  epic-2: in-progress
+  2-1-build-authoritative-inventory-and-resource-model: done
+  2-2-deliver-bag-and-resource-overview: done
+  2-3-implement-reward-capacity-check-and-blocking-feedback: done
+  2-4-support-consumables-and-resource-deduction-flow: done
+  epic-2-retrospective: optional
+
+  epic-3: in-progress
+  3-1-build-beast-instance-model-and-list-query: done
+  3-2-deliver-beast-detail-and-team-setup: review
+  3-3-implement-basic-beast-growth-and-authoritative-settlement: backlog
+  3-4-show-growth-feedback-and-limit-deep-growth-branches: backlog
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-build-stage-and-progression-query-flow: backlog
+  4-2-deliver-battle-entry-and-team-confirmation: backlog
+  4-3-implement-authoritative-battle-settlement-and-rewards: backlog
+  4-4-deliver-battle-result-and-failure-recovery: backlog
+  4-5-build-battle-reward-growth-rechallenge-loop: backlog
+  epic-4-retrospective: optional
+
+  epic-5: backlog
+  5-1-deliver-minimal-liveops-configuration: backlog
+  5-2-build-support-query-for-init-reward-and-capacity-blocks: backlog
+  5-3-deliver-web-and-wechat-shell-alignment: backlog
+  5-4-build-legacy-prototype-asset-and-id-mapping-layer: backlog
+  5-5-define-deferred-system-entry-and-extension-boundaries: backlog
+  epic-5-retrospective: optional
