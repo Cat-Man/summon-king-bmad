@@ -1,4 +1,5 @@
 import {
+  applyBeastGrowthAction,
   applyResourceConsumeAction,
   applyRewardBundleToInventory,
   buildStarterInventorySnapshot,
@@ -207,6 +208,51 @@ describe('buildStarterPlayerState', () => {
           gem: 100,
           stamina: 20,
         },
+      },
+    });
+  });
+
+  it('applies the minimal beast growth action to the authoritative player snapshot', () => {
+    const initialized = buildStarterPlayerState({
+      accountId: 'acc_0001',
+      hostPlatform: 'web',
+      sessionToken: 'sess_0001',
+      now: '2026-04-06T00:00:00.000Z',
+    });
+
+    const result = applyBeastGrowthAction({
+      snapshot: initialized.snapshot,
+      beastInstanceId: 'beast_inst_0001',
+      actionId: 'basic-level-up',
+      now: '2026-04-06T00:10:00.000Z',
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      actionId: 'basic-level-up',
+      beast: {
+        beastInstanceId: 'beast_inst_0001',
+        level: 2,
+      },
+      consumedResources: [
+        {
+          resourceType: 'gold',
+          amountConsumed: 200,
+          amountRemaining: 800,
+        },
+      ],
+      snapshot: {
+        resources: {
+          gold: 800,
+          gem: 100,
+          stamina: 20,
+        },
+        beasts: [
+          expect.objectContaining({
+            beastInstanceId: 'beast_inst_0001',
+            level: 2,
+          }),
+        ],
       },
     });
   });

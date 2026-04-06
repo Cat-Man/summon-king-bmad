@@ -4,6 +4,7 @@ import {
   createInMemoryRewardAuditLogRepository,
 } from '@workspace/db';
 import {
+  createBeastGrowthService,
   createBeastDetailQueryService,
   createBeastListQueryService,
   createDefaultTeamSetupService,
@@ -545,6 +546,117 @@ describe('createPlayerInitializationService', () => {
         retryable: false,
       },
     });
+  });
+
+  it('settles beast growth authoritatively, syncs both repositories and records a success audit event', () => {
+    const repository = createInMemoryPlayerInitializationRepository();
+    const inventoryRepository = createInMemoryPlayerInventoryRepository();
+    const auditRepository = createInMemoryRewardAuditLogRepository();
+    repository.save(createTwoBeastState());
+    inventoryRepository.saveResourceState({
+      accountId: 'acc_0001',
+      playerId: 'player_0001',
+      resources: {
+        gold: 1000,
+        gem: 100,
+        stamina: 20,
+      },
+      updatedAt: '2026-04-06T00:00:00.000Z',
+    });
+    inventoryRepository.saveBagState({
+      accountId: 'acc_0001',
+      playerId: 'player_0001',
+      bag: {
+        items: [
+          {
+            slotId: 'bag-slot-0001',
+            itemId: 'item_1027',
+            itemName: '回城符',
+            itemType: 'consumable',
+            quantity: 5,
+            stackable: true,
+          },
+        ],
+        capacity: {
+          usedSlots: 1,
+          totalSlots: 20,
+          freeSlots: 19,
+        },
+      },
+      updatedAt: '2026-04-06T00:00:00.000Z',
+    });
+
+    const service = createBeastGrowthService({
+      repository,
+      inventoryRepository,
+      auditRepository,
+      resolveSession(sessionToken) {
+        return {
+          accountId: 'acc_0001',
+          playerId: 'player_0001',
+          sessionToken,
+          hostPlatform: 'web',
+          needsPlayerInitialization: false,
+        };
+      },
+      now: () => '2026-04-06T00:10:00.000Z',
+    });
+
+    const response = service.growBeast({
+      sessionToken: 'sess_0001',
+      beastInstanceId: 'beast_inst_0001',
+      actionId: 'basic-level-up',
+      traceId: 'trace-growth-001',
+    });
+
+    expect(response).toMatchObject({
+      ok: true,
+      traceId: 'trace-growth-001',
+      actionId: 'basic-level-up',
+      beast: {
+        beastInstanceId: 'beast_inst_0001',
+        level: 2,
+      },
+      resources: {
+        gold: 800,
+        gem: 100,
+        stamina: 20,
+      },
+    });
+    expect(repository.findByAccountId('acc_0001')).toMatchObject({
+      snapshot: {
+        resources: {
+          gold: 800,
+        },
+        beasts: [
+          expect.objectContaining({
+            beastInstanceId: 'beast_inst_0001',
+            level: 2,
+          }),
+          expect.objectContaining({
+            beastInstanceId: 'beast_inst_0002',
+            level: 1,
+          }),
+        ],
+      },
+    });
+    expect(inventoryRepository.findSnapshotByPlayerId('player_0001')).toMatchObject({
+      resources: {
+        gold: 800,
+        gem: 100,
+        stamina: 20,
+      },
+    });
+    expect(auditRepository.listByPlayerId('player_0001')).toEqual([
+      expect.objectContaining({
+        traceId: 'trace-growth-001',
+        eventType: 'beast.growth',
+        status: 'granted',
+        resourceType: 'gold',
+        resourceAmount: 200,
+        beastInstanceId: 'beast_inst_0001',
+      }),
+    ]);
   });
 
   it('grants a controlled reward bundle, updates inventory and records a success audit event', () => {

@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: '2026-04-05 13:30:17 +0800'
-last_updated: '2026-04-06 07:57:09 +0800'
+last_updated: '2026-04-06 11:52:00 +0800'
 project: '召唤之王'
 project_key: 'NOKEY'
 tracking_system: 'file-system'
@@ -60,7 +60,7 @@ development_status:
   epic-3: in-progress
   3-1-build-beast-instance-model-and-list-query: done
   3-2-deliver-beast-detail-and-team-setup: review
-  3-3-implement-basic-beast-growth-and-authoritative-settlement: backlog
+  3-3-implement-basic-beast-growth-and-authoritative-settlement: review
   3-4-show-growth-feedback-and-limit-deep-growth-branches: backlog
   epic-3-retrospective: optional
 

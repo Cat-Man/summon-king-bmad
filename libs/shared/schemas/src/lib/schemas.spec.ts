@@ -1,4 +1,6 @@
 import {
+  beastGrowthRequestSchema,
+  beastGrowthResponseSchema,
   beastDetailRequestSchema,
   beastDetailResponseSchema,
   beastListRequestSchema,
@@ -7,6 +9,8 @@ import {
   defaultTeamSetupResponseSchema,
   inventorySnapshotRequestSchema,
   inventorySnapshotResponseSchema,
+  parseBeastGrowthRequest,
+  parseBeastGrowthResponse,
   parseBeastDetailRequest,
   parseBeastDetailResponse,
   parseBeastListRequest,
@@ -610,5 +614,88 @@ describe('resource consume schemas', () => {
 
     expect(resourceConsumeResponseSchema.parse(success)).toEqual(success);
     expect(resourceConsumeResponseSchema.parse(blocked)).toEqual(blocked);
+  });
+});
+
+describe('beast growth schemas', () => {
+  it('parses a valid beast growth request', () => {
+    const parsed = parseBeastGrowthRequest({
+      sessionToken: 'sess_001',
+      beastInstanceId: 'beast_inst_001',
+      actionId: 'basic-level-up',
+    });
+
+    expect(beastGrowthRequestSchema.parse(parsed)).toEqual(parsed);
+  });
+
+  it('rejects an empty session token, missing beast id or unknown growth action id', () => {
+    expect(() =>
+      parseBeastGrowthRequest({
+        sessionToken: '',
+        beastInstanceId: 'beast_inst_001',
+        actionId: 'basic-level-up',
+      }),
+    ).toThrow(/sessionToken/i);
+
+    expect(() =>
+      parseBeastGrowthRequest({
+        sessionToken: 'sess_001',
+        beastInstanceId: '',
+        actionId: 'basic-level-up',
+      }),
+    ).toThrow(/beastInstanceId/i);
+
+    expect(() =>
+      parseBeastGrowthRequest({
+        sessionToken: 'sess_001',
+        beastInstanceId: 'beast_inst_001',
+        actionId: 'unknown-growth',
+      }),
+    ).toThrow(/actionId/i);
+  });
+
+  it('parses success and blocked payloads for the authoritative beast growth flow', () => {
+    const success = parseBeastGrowthResponse({
+      ok: true,
+      traceId: 'trace-growth-001',
+      actionId: 'basic-level-up',
+      message: '培养成功，初始幻兽提升到 Lv.2。',
+      beast: {
+        beastInstanceId: 'beast_inst_001',
+        beastId: 'starter-beast-001',
+        beastName: '初始幻兽',
+        level: 2,
+        role: 'starter',
+        inDefaultTeam: true,
+        availableForBattle: true,
+        canSetAsDefault: false,
+      },
+      resources: {
+        gold: 800,
+        gem: 100,
+        stamina: 20,
+      },
+    });
+
+    const blocked = parseBeastGrowthResponse({
+      ok: false,
+      traceId: 'trace-growth-002',
+      error: {
+        code: 'BEAST_GROWTH_RESOURCE_INSUFFICIENT',
+        message: '金币不足，无法完成本次培养',
+        retryable: true,
+        details: {
+          reason: 'resource_insufficient',
+          actionId: 'basic-level-up',
+          guidance: '请先获取更多金币后再尝试培养。',
+          resourceType: 'gold',
+          currentAmount: 100,
+          requiredAmount: 200,
+        },
+      },
+    });
+
+    expect(beastGrowthResponseSchema.parse(success)).toEqual(success);
+    expect(beastGrowthResponseSchema.parse(blocked)).toEqual(blocked);
   });
 });

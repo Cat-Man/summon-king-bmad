@@ -2,14 +2,18 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   fetchBeastDetail as requestBeastDetail,
+  growBeast as requestGrowBeast,
   setupDefaultTeam as requestSetupDefaultTeam,
 } from '@workspace/data-access';
 import {
+  getInventorySnapshot,
   getPlayerInitSnapshot,
+  setInventorySnapshot,
   setPlayerInitSnapshot,
 } from '@workspace/state';
 import type {
   BeastDetailEntry,
+  BeastGrowthResponse,
   BeastTeamSummary,
   DefaultTeamSnapshot,
 } from '@workspace/types';
@@ -19,6 +23,7 @@ interface BeastDetailPageProps {
   beastInstanceId?: string;
   sessionToken?: string | null;
   fetchBeastDetail?: typeof requestBeastDetail;
+  growBeast?: typeof requestGrowBeast;
   setupDefaultTeam?: typeof requestSetupDefaultTeam;
 }
 
@@ -62,10 +67,56 @@ function syncSharedPlayerSnapshot(defaultTeam: BeastTeamSummary): void {
   });
 }
 
+function syncSharedPlayerSnapshotAfterGrowth(
+  response: Extract<BeastGrowthResponse, { ok: true }>,
+): void {
+  const snapshot = getPlayerInitSnapshot();
+
+  if (!snapshot) {
+    return;
+  }
+
+  setPlayerInitSnapshot({
+    ...snapshot,
+    resources: {
+      ...response.resources,
+    },
+    beasts: snapshot.beasts.map((item) =>
+      item.beastInstanceId === response.beast.beastInstanceId
+        ? {
+            beastInstanceId: response.beast.beastInstanceId,
+            beastId: response.beast.beastId,
+            beastName: response.beast.beastName,
+            level: response.beast.level,
+            role: response.beast.role,
+          }
+        : item,
+    ),
+  });
+}
+
+function syncSharedInventorySnapshotAfterGrowth(
+  response: Extract<BeastGrowthResponse, { ok: true }>,
+): void {
+  const snapshot = getInventorySnapshot();
+
+  if (!snapshot) {
+    return;
+  }
+
+  setInventorySnapshot({
+    ...snapshot,
+    resources: {
+      ...response.resources,
+    },
+  });
+}
+
 export function BeastDetailPage({
   beastInstanceId,
   sessionToken = null,
   fetchBeastDetail = requestBeastDetail,
+  growBeast = requestGrowBeast,
   setupDefaultTeam = requestSetupDefaultTeam,
 }: BeastDetailPageProps) {
   const params = useParams<{ beastInstanceId: string }>();
@@ -195,6 +246,60 @@ export function BeastDetailPage({
     }
   }
 
+  async function handleGrowth(): Promise<void> {
+    if (!activeBeastInstanceId || !sessionToken) {
+      setFeedback({
+        tone: 'error',
+        title: '操作失败',
+        message: '当前会话不可用，无法执行幻兽培养。',
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await growBeast({
+        sessionToken,
+        beastInstanceId: activeBeastInstanceId,
+        actionId: 'basic-level-up',
+      });
+
+      if (response.ok) {
+        setBeast(response.beast);
+        syncSharedPlayerSnapshotAfterGrowth(response);
+        syncSharedInventorySnapshotAfterGrowth(response);
+        setErrorMessage(null);
+        setFeedback({
+          tone: 'success',
+          title: '培养成功',
+          message: response.message,
+        });
+        return;
+      }
+
+      const tone =
+        response.error.code === 'BEAST_GROWTH_INVALID_SESSION' ||
+        response.error.code === 'BEAST_GROWTH_STATE_MISSING'
+          ? 'error'
+          : 'blocked';
+
+      setFeedback({
+        tone,
+        title: '培养失败',
+        message: response.error.message,
+      });
+    } catch {
+      setFeedback({
+        tone: 'error',
+        title: '培养失败',
+        message: '幻兽培养请求未完成，请稍后重试。',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
     <main className={styles.page}>
       <section className={`${styles.shell} ${styles.routeShell}`}>
@@ -292,6 +397,16 @@ export function BeastDetailPage({
                     已在队伍中
                   </button>
                 )}
+                <button
+                  className={styles.primaryButton}
+                  disabled={isSubmitting}
+                  onClick={() => {
+                    void handleGrowth();
+                  }}
+                  type="button"
+                >
+                  {isSubmitting ? '提交中...' : '培养 1 次'}
+                </button>
               </div>
             </section>
           </>

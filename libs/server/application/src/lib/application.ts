@@ -1,4 +1,5 @@
 import {
+  applyBeastGrowthAction,
   applyResourceConsumeAction,
   applyRewardBundleToInventory,
   buildStarterInventorySnapshot,
@@ -12,6 +13,8 @@ import type {
   RewardAuditLogRepository,
 } from '@workspace/db';
 import type {
+  BeastGrowthActionId,
+  BeastGrowthResponse,
   BeastDetailEntry,
   BeastDetailResponse,
   BeastListResponse,
@@ -62,6 +65,15 @@ export interface DefaultTeamSetupService {
     beastInstanceIds: string[];
     traceId: string;
   }): DefaultTeamSetupResponse;
+}
+
+export interface BeastGrowthService {
+  growBeast(input: {
+    sessionToken: string;
+    beastInstanceId: string;
+    actionId: BeastGrowthActionId;
+    traceId: string;
+  }): BeastGrowthResponse;
 }
 
 export interface RewardClaimService {
@@ -524,6 +536,135 @@ export function createDefaultTeamSetupService({
           defaultTeamSet,
         }),
         defaultTeam: buildDefaultTeamSummary(updatedState.snapshot.defaultTeam),
+      };
+    },
+  };
+}
+
+export function createBeastGrowthService({
+  repository,
+  inventoryRepository,
+  auditRepository,
+  resolveSession,
+  now = () => new Date().toISOString(),
+}: {
+  repository: PlayerInitializationRepository;
+  inventoryRepository: PlayerInventoryRepository;
+  auditRepository: RewardAuditLogRepository;
+  resolveSession(sessionToken: string): UnifiedSession | null;
+  now?: () => string;
+}): BeastGrowthService {
+  return {
+    growBeast({ sessionToken, beastInstanceId, actionId, traceId }) {
+      const session = resolveSession(sessionToken);
+      if (!session || !session.playerId) {
+        return {
+          ok: false,
+          traceId,
+          error: {
+            code: 'BEAST_GROWTH_INVALID_SESSION',
+            message: '幻兽培养会话无效',
+            retryable: false,
+          },
+        };
+      }
+
+      const playerState = repository.findByAccountId(session.accountId);
+      const inventorySnapshot = inventoryRepository.findSnapshotByPlayerId(
+        session.playerId,
+      );
+      if (!playerState || !inventorySnapshot) {
+        return {
+          ok: false,
+          traceId,
+          error: {
+            code: 'BEAST_GROWTH_STATE_MISSING',
+            message: '幻兽培养所需状态不存在',
+            retryable: false,
+          },
+        };
+      }
+
+      const result = applyBeastGrowthAction({
+        snapshot: playerState.snapshot,
+        beastInstanceId,
+        actionId,
+        now: now(),
+      });
+
+      if (!result.ok) {
+        auditRepository.save({
+          traceId,
+          accountId: playerState.accountId,
+          playerId: playerState.snapshot.player.playerId,
+          actionId,
+          eventType: 'beast.growth',
+          status: 'blocked',
+          errorCode: result.error.code,
+          resourceType:
+            result.error.details?.reason === 'resource_insufficient'
+              ? result.error.details.resourceType
+              : undefined,
+          resourceAmount:
+            result.error.details?.reason === 'resource_insufficient'
+              ? result.error.details.requiredAmount
+              : undefined,
+          beastInstanceId,
+          createdAt: now(),
+        });
+
+        return {
+          ok: false,
+          traceId,
+          error: result.error,
+        };
+      }
+
+      const updatedState = repository.save({
+        ...playerState,
+        session: {
+          ...playerState.session,
+          sessionToken,
+          hostPlatform: session.hostPlatform,
+        },
+        snapshot: result.snapshot,
+      });
+
+      saveResolvedInventorySnapshot(inventoryRepository, {
+        accountId: inventorySnapshot.accountId,
+        playerId: inventorySnapshot.playerId,
+        resources: result.snapshot.resources,
+        bag: inventorySnapshot.bag,
+        updatedAt: now(),
+      });
+
+      const defaultTeamSet = new Set(
+        updatedState.snapshot.defaultTeam.beastInstanceIds,
+      );
+
+      auditRepository.save({
+        traceId,
+        accountId: updatedState.accountId,
+        playerId: updatedState.snapshot.player.playerId,
+        actionId,
+        eventType: 'beast.growth',
+        status: 'granted',
+        resourceType: result.consumedResources[0]?.resourceType,
+        resourceAmount: result.consumedResources[0]?.amountConsumed,
+        beastInstanceId,
+        createdAt: now(),
+      });
+
+      return {
+        ok: true,
+        traceId,
+        actionId,
+        message: result.message,
+        beast: buildBeastDetailEntry({
+          beast: result.beast,
+          defaultTeamSet,
+        }),
+        resources: updatedState.snapshot.resources,
       };
     },
   };

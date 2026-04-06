@@ -35,6 +35,10 @@ export const RESOURCE_CONSUME_ACTION_IDS = [
 export type ResourceConsumeActionId =
   (typeof RESOURCE_CONSUME_ACTION_IDS)[number];
 
+export const BEAST_GROWTH_ACTION_IDS = ['basic-level-up'] as const;
+
+export type BeastGrowthActionId = (typeof BEAST_GROWTH_ACTION_IDS)[number];
+
 export const INVENTORY_ERROR_CODES = [
   'INVENTORY_INVALID_INPUT',
   'INVENTORY_INVALID_SESSION',
@@ -71,6 +75,17 @@ export const DEFAULT_TEAM_SETUP_ERROR_CODES = [
 
 export type DefaultTeamSetupErrorCode =
   (typeof DEFAULT_TEAM_SETUP_ERROR_CODES)[number];
+
+export const BEAST_GROWTH_ERROR_CODES = [
+  'BEAST_GROWTH_INVALID_INPUT',
+  'BEAST_GROWTH_INVALID_SESSION',
+  'BEAST_GROWTH_STATE_MISSING',
+  'BEAST_GROWTH_BEAST_NOT_FOUND',
+  'BEAST_GROWTH_ACTION_NOT_ALLOWED',
+  'BEAST_GROWTH_RESOURCE_INSUFFICIENT',
+] as const;
+
+export type BeastGrowthErrorCode = (typeof BEAST_GROWTH_ERROR_CODES)[number];
 
 export const REWARD_CLAIM_ERROR_CODES = [
   'REWARD_CLAIM_INVALID_INPUT',
@@ -368,6 +383,57 @@ export interface DefaultTeamSetupErrorResponse {
 export type DefaultTeamSetupResponse =
   | DefaultTeamSetupSuccessResponse
   | DefaultTeamSetupErrorResponse;
+
+export interface BeastGrowthRequest {
+  sessionToken: string;
+  beastInstanceId: string;
+  actionId: BeastGrowthActionId;
+}
+
+export interface BeastGrowthActionNotAllowedDetails {
+  reason: 'action_not_allowed';
+  actionId: BeastGrowthActionId;
+  guidance: string;
+}
+
+export interface BeastGrowthResourceInsufficientDetails {
+  reason: 'resource_insufficient';
+  actionId: BeastGrowthActionId;
+  guidance: string;
+  resourceType: ResourceType;
+  currentAmount: number;
+  requiredAmount: number;
+}
+
+export type BeastGrowthErrorDetails =
+  | BeastGrowthActionNotAllowedDetails
+  | BeastGrowthResourceInsufficientDetails;
+
+export interface BeastGrowthSuccessResponse {
+  ok: true;
+  traceId: string;
+  actionId: BeastGrowthActionId;
+  message: string;
+  beast: BeastDetailEntry;
+  resources: ResourceSnapshot;
+}
+
+export interface BeastGrowthError {
+  code: BeastGrowthErrorCode;
+  message: string;
+  retryable: boolean;
+  details?: BeastGrowthErrorDetails;
+}
+
+export interface BeastGrowthErrorResponse {
+  ok: false;
+  traceId: string;
+  error: BeastGrowthError;
+}
+
+export type BeastGrowthResponse =
+  | BeastGrowthSuccessResponse
+  | BeastGrowthErrorResponse;
 
 export interface RewardClaimRequest {
   sessionToken: string;

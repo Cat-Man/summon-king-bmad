@@ -1,9 +1,12 @@
 import type {
+  BeastGrowthActionId,
+  BeastGrowthError,
   ConsumedItemChange,
   ConsumedResourceChange,
   InventorySnapshot,
   InitializedPlayerState,
   HostPlatform,
+  PlayerInitSnapshot,
   ResourceConsumeActionId,
   ResourceConsumeError,
   RewardBundleId,
@@ -151,6 +154,20 @@ export type ResourceConsumeActionResult =
       error: ResourceConsumeError;
     };
 
+export type BeastGrowthActionResult =
+  | {
+      ok: true;
+      actionId: BeastGrowthActionId;
+      message: string;
+      beast: PlayerInitSnapshot['beasts'][number];
+      consumedResources: ConsumedResourceChange[];
+      snapshot: PlayerInitSnapshot;
+    }
+  | {
+      ok: false;
+      error: BeastGrowthError;
+    };
+
 function cloneInventorySnapshot(snapshot: InventorySnapshot): InventorySnapshot {
   return {
     ...snapshot,
@@ -162,6 +179,23 @@ function cloneInventorySnapshot(snapshot: InventorySnapshot): InventorySnapshot 
       capacity: {
         ...snapshot.bag.capacity,
       },
+    },
+  };
+}
+
+function clonePlayerInitSnapshot(snapshot: PlayerInitSnapshot): PlayerInitSnapshot {
+  return {
+    ...snapshot,
+    player: {
+      ...snapshot.player,
+    },
+    resources: {
+      ...snapshot.resources,
+    },
+    beasts: snapshot.beasts.map((beast) => ({ ...beast })),
+    defaultTeam: {
+      ...snapshot.defaultTeam,
+      beastInstanceIds: [...snapshot.defaultTeam.beastInstanceIds],
     },
   };
 }
@@ -201,6 +235,25 @@ function buildGoldInsufficientError(
       reason: 'resource_insufficient',
       actionId,
       guidance: '请先获取更多金币后再尝试。',
+      resourceType: 'gold',
+      currentAmount,
+      requiredAmount: GROWTH_GOLD_COST,
+    },
+  };
+}
+
+function buildBeastGrowthGoldInsufficientError(
+  actionId: BeastGrowthActionId,
+  currentAmount: number,
+): BeastGrowthError {
+  return {
+    code: 'BEAST_GROWTH_RESOURCE_INSUFFICIENT',
+    message: '金币不足，无法完成本次培养',
+    retryable: true,
+    details: {
+      reason: 'resource_insufficient',
+      actionId,
+      guidance: '请先获取更多金币后再尝试培养。',
       resourceType: 'gold',
       currentAmount,
       requiredAmount: GROWTH_GOLD_COST,
@@ -483,6 +536,87 @@ export function applyResourceConsumeAction({
             reason: 'action_not_allowed',
             actionId,
             guidance: '请使用一期已开放的消耗动作。',
+          },
+        },
+      };
+    }
+  }
+}
+
+export function applyBeastGrowthAction({
+  snapshot,
+  beastInstanceId,
+  actionId,
+}: {
+  snapshot: PlayerInitSnapshot;
+  beastInstanceId: string;
+  actionId: BeastGrowthActionId;
+  now: string;
+}): BeastGrowthActionResult {
+  const nextSnapshot = clonePlayerInitSnapshot(snapshot);
+
+  switch (actionId) {
+    case 'basic-level-up': {
+      const beastIndex = nextSnapshot.beasts.findIndex(
+        (beast) => beast.beastInstanceId === beastInstanceId,
+      );
+      if (beastIndex === -1) {
+        return {
+          ok: false,
+          error: {
+            code: 'BEAST_GROWTH_BEAST_NOT_FOUND',
+            message: '目标幻兽不存在',
+            retryable: false,
+          },
+        };
+      }
+
+      if (nextSnapshot.resources.gold < GROWTH_GOLD_COST) {
+        return {
+          ok: false,
+          error: buildBeastGrowthGoldInsufficientError(
+            actionId,
+            nextSnapshot.resources.gold,
+          ),
+        };
+      }
+
+      nextSnapshot.resources = {
+        ...nextSnapshot.resources,
+        gold: nextSnapshot.resources.gold - GROWTH_GOLD_COST,
+      };
+      nextSnapshot.beasts[beastIndex] = {
+        ...nextSnapshot.beasts[beastIndex],
+        level: nextSnapshot.beasts[beastIndex].level + 1,
+      };
+
+      return {
+        ok: true,
+        actionId,
+        message: `培养成功，${nextSnapshot.beasts[beastIndex].beastName}提升到 Lv.${nextSnapshot.beasts[beastIndex].level}。`,
+        beast: nextSnapshot.beasts[beastIndex],
+        consumedResources: [
+          {
+            resourceType: 'gold',
+            amountConsumed: GROWTH_GOLD_COST,
+            amountRemaining: nextSnapshot.resources.gold,
+          },
+        ],
+        snapshot: nextSnapshot,
+      };
+    }
+
+    default: {
+      return {
+        ok: false,
+        error: {
+          code: 'BEAST_GROWTH_ACTION_NOT_ALLOWED',
+          message: '当前培养动作未开放',
+          retryable: false,
+          details: {
+            reason: 'action_not_allowed',
+            actionId,
+            guidance: '请使用一期已开放的培养动作。',
           },
         },
       };

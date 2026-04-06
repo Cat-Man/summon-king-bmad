@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import {
+  BEAST_GROWTH_ACTION_IDS,
+  BEAST_GROWTH_ERROR_CODES,
   BEAST_DETAIL_ERROR_CODES,
   BEAST_LIST_ERROR_CODES,
   DEFAULT_TEAM_SETUP_ERROR_CODES,
@@ -13,6 +15,8 @@ import {
   REWARD_BUNDLE_IDS,
   REWARD_CLAIM_ERROR_CODES,
   SESSION_AUTH_ERROR_CODES,
+  type BeastGrowthRequest,
+  type BeastGrowthResponse,
   type BeastDetailRequest,
   type BeastDetailResponse,
   type BeastListRequest,
@@ -314,6 +318,53 @@ export const defaultTeamSetupResponseSchema = z.union([
   defaultTeamSetupErrorResponseSchema,
 ]);
 
+export const beastGrowthRequestSchema = z.object({
+  sessionToken: z.string().min(1),
+  beastInstanceId: z.string().min(1),
+  actionId: z.enum(BEAST_GROWTH_ACTION_IDS),
+});
+
+export const beastGrowthErrorDetailsSchema = z.discriminatedUnion('reason', [
+  z.object({
+    reason: z.literal('action_not_allowed'),
+    actionId: z.enum(BEAST_GROWTH_ACTION_IDS),
+    guidance: z.string().min(1),
+  }),
+  z.object({
+    reason: z.literal('resource_insufficient'),
+    actionId: z.enum(BEAST_GROWTH_ACTION_IDS),
+    guidance: z.string().min(1),
+    resourceType: z.enum(RESOURCE_TYPES),
+    currentAmount: z.number().int().nonnegative(),
+    requiredAmount: z.number().int().positive(),
+  }),
+]);
+
+export const beastGrowthSuccessResponseSchema = z.object({
+  ok: z.literal(true),
+  traceId: z.string().min(1),
+  actionId: z.enum(BEAST_GROWTH_ACTION_IDS),
+  message: z.string().min(1),
+  beast: beastDetailEntrySchema,
+  resources: resourceSnapshotSchema,
+});
+
+export const beastGrowthErrorResponseSchema = z.object({
+  ok: z.literal(false),
+  traceId: z.string().min(1),
+  error: z.object({
+    code: z.enum(BEAST_GROWTH_ERROR_CODES),
+    message: z.string().min(1),
+    retryable: z.boolean(),
+    details: beastGrowthErrorDetailsSchema.optional(),
+  }),
+});
+
+export const beastGrowthResponseSchema = z.union([
+  beastGrowthSuccessResponseSchema,
+  beastGrowthErrorResponseSchema,
+]);
+
 export const rewardClaimRequestSchema = z.object({
   sessionToken: z.string().min(1),
   rewardBundleId: z.enum(REWARD_BUNDLE_IDS),
@@ -486,6 +537,14 @@ export function parseDefaultTeamSetupResponse(
   input: unknown,
 ): DefaultTeamSetupResponse {
   return defaultTeamSetupResponseSchema.parse(input);
+}
+
+export function parseBeastGrowthRequest(input: unknown): BeastGrowthRequest {
+  return beastGrowthRequestSchema.parse(input);
+}
+
+export function parseBeastGrowthResponse(input: unknown): BeastGrowthResponse {
+  return beastGrowthResponseSchema.parse(input);
 }
 
 export function parseRewardClaimRequest(input: unknown): RewardClaimRequest {

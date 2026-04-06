@@ -15,6 +15,7 @@ import {
 import { createHash, randomUUID } from 'node:crypto';
 import { ZodError } from 'zod';
 import {
+  parseBeastGrowthRequest,
   parseBeastDetailRequest,
   parseBeastListRequest,
   parseDefaultTeamSetupRequest,
@@ -181,6 +182,60 @@ export class BeastController {
           error: {
             code: 'DEFAULT_TEAM_SETUP_INVALID_INPUT',
             message: '默认队伍配置请求无效',
+            retryable: false,
+          },
+        });
+      }
+
+      throw error;
+    }
+  }
+
+  @Post('growth')
+  @HttpCode(HttpStatus.OK)
+  growBeast(
+    @Body() body: unknown,
+    @Headers('x-request-id') requestId?: string,
+  ) {
+    const traceId = requestId?.trim() || randomUUID();
+
+    try {
+      const request = parseBeastGrowthRequest(body);
+      const response = this.beastService.growBeast(
+        request.sessionToken,
+        request.beastInstanceId,
+        request.actionId,
+        traceId,
+      );
+
+      if (!response.ok) {
+        if (response.error.code === 'BEAST_GROWTH_STATE_MISSING') {
+          throw new NotFoundException(response);
+        }
+
+        if (response.error.code === 'BEAST_GROWTH_BEAST_NOT_FOUND') {
+          throw new NotFoundException(response);
+        }
+
+        if (
+          response.error.code === 'BEAST_GROWTH_RESOURCE_INSUFFICIENT' ||
+          response.error.code === 'BEAST_GROWTH_ACTION_NOT_ALLOWED'
+        ) {
+          throw new ConflictException(response);
+        }
+
+        throw new UnauthorizedException(response);
+      }
+
+      return response;
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new BadRequestException({
+          ok: false,
+          traceId,
+          error: {
+            code: 'BEAST_GROWTH_INVALID_INPUT',
+            message: '幻兽培养请求无效',
             retryable: false,
           },
         });

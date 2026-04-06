@@ -18,5 +18,6 @@ import {
       useFactory: createRewardAuditLogRepository,
     },
   ],
+  exports: [REWARD_AUDIT_LOG_REPOSITORY],
 })
 export class ResourceModule {}

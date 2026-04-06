@@ -1,4 +1,5 @@
 import {
+  BEAST_GROWTH_CONTRACT,
   BEAST_DETAIL_CONTRACT,
   BEAST_LIST_CONTRACT,
   DEFAULT_TEAM_SETUP_CONTRACT,
@@ -7,6 +8,7 @@ import {
   RESOURCE_CONSUME_CONTRACT,
   REWARD_CLAIM_CONTRACT,
   SESSION_AUTH_CONTRACT,
+  buildBeastGrowthUrl,
   buildBeastDetailUrl,
   buildBeastListUrl,
   buildDefaultTeamSetupUrl,
@@ -15,6 +17,7 @@ import {
   buildResourceConsumeUrl,
   buildRewardClaimUrl,
   buildSessionAuthUrl,
+  isBeastGrowthRoute,
   isBeastDetailRoute,
   isBeastListRoute,
   isDefaultTeamSetupRoute,
@@ -149,6 +152,25 @@ describe('default team setup contract', () => {
     expect(
       isDefaultTeamSetupRoute('POST', '/api/v1/beast/beast_inst_001'),
     ).toBe(false);
+  });
+});
+
+describe('beast growth contract', () => {
+  it('defines the authoritative beast growth endpoint under the beast boundary', () => {
+    expect(BEAST_GROWTH_CONTRACT).toEqual({
+      method: 'POST',
+      path: '/api/v1/beast/growth',
+    });
+    expect(buildBeastGrowthUrl()).toBe('/api/v1/beast/growth');
+    expect(buildBeastGrowthUrl('https://game.example.com')).toBe(
+      'https://game.example.com/api/v1/beast/growth',
+    );
+  });
+
+  it('identifies the canonical beast growth route only', () => {
+    expect(isBeastGrowthRoute('POST', '/api/v1/beast/growth')).toBe(true);
+    expect(isBeastGrowthRoute('GET', '/api/v1/beast/growth')).toBe(false);
+    expect(isBeastGrowthRoute('POST', '/api/v1/resource/consume')).toBe(false);
   });
 });
 

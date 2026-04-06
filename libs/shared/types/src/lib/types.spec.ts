@@ -1,5 +1,7 @@
 import { expectTypeOf } from 'vitest';
 import type {
+  BeastGrowthRequest,
+  BeastGrowthResponse,
   BeastDetailRequest,
   BeastDetailResponse,
   BeastListRequest,
@@ -21,6 +23,8 @@ import type {
   UnifiedSession,
 } from './types.js';
 import {
+  BEAST_GROWTH_ACTION_IDS,
+  BEAST_GROWTH_ERROR_CODES,
   BEAST_DETAIL_ERROR_CODES,
   BEAST_LIST_ERROR_CODES,
   DEFAULT_TEAM_SETUP_ERROR_CODES,
@@ -411,6 +415,53 @@ describe('shared resource consume types', () => {
       'RESOURCE_CONSUME_ACTION_NOT_ALLOWED',
       'RESOURCE_CONSUME_ITEM_INSUFFICIENT',
       'RESOURCE_CONSUME_RESOURCE_INSUFFICIENT',
+    ]);
+  });
+});
+
+describe('shared beast growth types', () => {
+  it('supports a basic beast growth request and a resource-insufficient response', () => {
+    const request: BeastGrowthRequest = {
+      sessionToken: 'sess_001',
+      beastInstanceId: 'beast_inst_001',
+      actionId: 'basic-level-up',
+    };
+
+    const response: BeastGrowthResponse = {
+      ok: false,
+      traceId: 'trace-growth-001',
+      error: {
+        code: 'BEAST_GROWTH_RESOURCE_INSUFFICIENT',
+        message: '金币不足，无法完成本次培养',
+        retryable: true,
+        details: {
+          reason: 'resource_insufficient',
+          actionId: 'basic-level-up',
+          guidance: '请先获取更多金币后再尝试培养。',
+          resourceType: 'gold',
+          currentAmount: 100,
+          requiredAmount: 200,
+        },
+      },
+    };
+
+    expect(request.actionId).toBe('basic-level-up');
+    expect(response.error.details?.reason).toBe('resource_insufficient');
+    if (response.error.details?.reason !== 'resource_insufficient') {
+      throw new Error('Expected resource_insufficient details');
+    }
+    expect(response.error.details.requiredAmount).toBe(200);
+  });
+
+  it('exports stable beast growth action ids and error codes', () => {
+    expect(BEAST_GROWTH_ACTION_IDS).toEqual(['basic-level-up']);
+    expect(BEAST_GROWTH_ERROR_CODES).toEqual([
+      'BEAST_GROWTH_INVALID_INPUT',
+      'BEAST_GROWTH_INVALID_SESSION',
+      'BEAST_GROWTH_STATE_MISSING',
+      'BEAST_GROWTH_BEAST_NOT_FOUND',
+      'BEAST_GROWTH_ACTION_NOT_ALLOWED',
+      'BEAST_GROWTH_RESOURCE_INSUFFICIENT',
     ]);
   });
 });

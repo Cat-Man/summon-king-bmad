@@ -1,4 +1,5 @@
 import {
+  BEAST_GROWTH_CONTRACT,
   BEAST_DETAIL_CONTRACT,
   BEAST_LIST_CONTRACT,
   DEFAULT_TEAM_SETUP_CONTRACT,
@@ -7,6 +8,7 @@ import {
   RESOURCE_CONSUME_CONTRACT,
   REWARD_CLAIM_CONTRACT,
   SESSION_AUTH_CONTRACT,
+  buildBeastGrowthUrl,
   buildBeastDetailUrl,
   buildBeastListUrl,
   buildDefaultTeamSetupUrl,
@@ -17,6 +19,8 @@ import {
   buildSessionAuthUrl,
 } from '@workspace/contracts';
 import {
+  parseBeastGrowthRequest,
+  parseBeastGrowthResponse,
   parseBeastDetailRequest,
   parseBeastDetailResponse,
   parseBeastListRequest,
@@ -35,6 +39,8 @@ import {
   parseSessionAuthResponse,
 } from '@workspace/schemas';
 import type {
+  BeastGrowthRequest,
+  BeastGrowthResponse,
   BeastDetailRequest,
   BeastDetailResponse,
   BeastListRequest,
@@ -92,6 +98,11 @@ export interface FetchBeastDetailOptions {
 }
 
 export interface SetupDefaultTeamOptions {
+  baseUrl?: string;
+  fetcher?: FetchLike;
+}
+
+export interface GrowBeastOptions {
   baseUrl?: string;
   fetcher?: FetchLike;
 }
@@ -236,6 +247,28 @@ export async function setupDefaultTeam(
   });
 
   return parseDefaultTeamSetupResponse(await response.json());
+}
+
+export async function growBeast(
+  request: BeastGrowthRequest,
+  options: GrowBeastOptions = {},
+): Promise<BeastGrowthResponse> {
+  const payload = parseBeastGrowthRequest(request);
+  const fetcher = options.fetcher ?? (globalThis.fetch as FetchLike | undefined);
+
+  if (!fetcher) {
+    throw new Error('No fetch implementation available for beast growth');
+  }
+
+  const response = await fetcher(buildBeastGrowthUrl(options.baseUrl), {
+    method: BEAST_GROWTH_CONTRACT.method,
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseBeastGrowthResponse(await response.json());
 }
 
 export async function claimReward(

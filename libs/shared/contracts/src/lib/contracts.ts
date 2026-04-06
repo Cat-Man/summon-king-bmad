@@ -28,6 +28,11 @@ export const DEFAULT_TEAM_SETUP_CONTRACT = {
   path: '/api/v1/beast/team/default',
 } as const;
 
+export const BEAST_GROWTH_CONTRACT = {
+  method: 'POST',
+  path: '/api/v1/beast/growth',
+} as const;
+
 export const REWARD_CLAIM_CONTRACT = {
   method: 'POST',
   path: '/api/v1/resource/rewards/claim',
@@ -98,6 +103,14 @@ export function buildDefaultTeamSetupUrl(baseUrl?: string): string {
   return `${baseUrl.replace(/\/$/, '')}${DEFAULT_TEAM_SETUP_CONTRACT.path}`;
 }
 
+export function buildBeastGrowthUrl(baseUrl?: string): string {
+  if (!baseUrl) {
+    return BEAST_GROWTH_CONTRACT.path;
+  }
+
+  return `${baseUrl.replace(/\/$/, '')}${BEAST_GROWTH_CONTRACT.path}`;
+}
+
 export function buildRewardClaimUrl(baseUrl?: string): string {
   if (!baseUrl) {
     return REWARD_CLAIM_CONTRACT.path;
@@ -146,6 +159,13 @@ export function isDefaultTeamSetupRoute(method: string, path: string): boolean {
   return (
     method.toUpperCase() === DEFAULT_TEAM_SETUP_CONTRACT.method &&
     path === DEFAULT_TEAM_SETUP_CONTRACT.path
+  );
+}
+
+export function isBeastGrowthRoute(method: string, path: string): boolean {
+  return (
+    method.toUpperCase() === BEAST_GROWTH_CONTRACT.method &&
+    path === BEAST_GROWTH_CONTRACT.path
   );
 }
 

@@ -1,4 +1,6 @@
 import type {
+  BeastGrowthActionId,
+  BeastGrowthErrorCode,
   InitializedPlayerState,
   InventoryBagSnapshot,
   InventorySnapshot,
@@ -42,16 +44,20 @@ export interface RewardAuditLogRecord {
   accountId: string;
   playerId: string;
   rewardBundleId?: RewardBundleId;
-  actionId?: ResourceConsumeActionId;
-  eventType: 'reward.claim' | 'resource.consume';
+  actionId?: ResourceConsumeActionId | BeastGrowthActionId;
+  eventType: 'reward.claim' | 'resource.consume' | 'beast.growth';
   status: 'granted' | 'blocked';
-  errorCode?: RewardClaimErrorCode | ResourceConsumeErrorCode;
+  errorCode?:
+    | RewardClaimErrorCode
+    | ResourceConsumeErrorCode
+    | BeastGrowthErrorCode;
   freeSlots?: number;
   requiredSlots?: number;
   resourceType?: ResourceType;
   resourceAmount?: number;
   itemId?: string;
   itemDelta?: number;
+  beastInstanceId?: string;
   createdAt: string;
 }
 

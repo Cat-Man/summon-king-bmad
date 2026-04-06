@@ -1,4 +1,5 @@
 import {
+  BEAST_GROWTH_CONTRACT,
   BEAST_DETAIL_CONTRACT,
   BEAST_LIST_CONTRACT,
   DEFAULT_TEAM_SETUP_CONTRACT,
@@ -10,6 +11,7 @@ import {
 } from '@workspace/contracts';
 import {
   authenticateSession,
+  growBeast,
   claimReward,
   consumeResource,
   fetchBeastDetail,
@@ -387,6 +389,70 @@ describe('authenticateSession', () => {
       },
       defaultTeam: {
         beastInstanceIds: ['beast_inst_002'],
+      },
+    });
+  });
+
+  it('posts a basic beast growth action through the shared beast growth contract', async () => {
+    const fetcher = vi.fn().mockResolvedValue({
+      json: async () => ({
+        ok: true,
+        traceId: 'trace-growth-001',
+        actionId: 'basic-level-up',
+        message: '培养成功，初始幻兽提升到 Lv.2。',
+        beast: {
+          beastInstanceId: 'beast_inst_001',
+          beastId: 'starter-beast-001',
+          beastName: '初始幻兽',
+          level: 2,
+          role: 'starter',
+          inDefaultTeam: true,
+          availableForBattle: true,
+          canSetAsDefault: false,
+        },
+        resources: {
+          gold: 800,
+          gem: 100,
+          stamina: 20,
+        },
+      }),
+    });
+
+    const response = await growBeast(
+      {
+        sessionToken: 'sess_001',
+        beastInstanceId: 'beast_inst_001',
+        actionId: 'basic-level-up',
+      },
+      {
+        baseUrl: 'https://game.example.com',
+        fetcher,
+      },
+    );
+
+    expect(fetcher).toHaveBeenCalledWith(
+      `https://game.example.com${BEAST_GROWTH_CONTRACT.path}`,
+      {
+        method: BEAST_GROWTH_CONTRACT.method,
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionToken: 'sess_001',
+          beastInstanceId: 'beast_inst_001',
+          actionId: 'basic-level-up',
+        }),
+      },
+    );
+    expect(response).toMatchObject({
+      ok: true,
+      actionId: 'basic-level-up',
+      beast: {
+        beastName: '初始幻兽',
+        level: 2,
+      },
+      resources: {
+        gold: 800,
       },
     });
   });
