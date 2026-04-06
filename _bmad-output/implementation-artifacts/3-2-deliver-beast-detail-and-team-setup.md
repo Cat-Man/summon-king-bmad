@@ -201,10 +201,12 @@ Codex (GPT-5)
 
 ### Debug Log References
 
+- `pnpm nx test @workspace/state`
 - `pnpm nx test @workspace/data-access`
 - `pnpm nx test @workspace/game-h5`
 - `pnpm nx run-many -t test -p @workspace/contracts,@workspace/types,@workspace/schemas,@workspace/application,@workspace/data-access,@workspace/game-server,@workspace/game-h5`
 - `pnpm nx run-many -t typecheck -p @workspace/contracts,@workspace/types,@workspace/schemas,@workspace/application,@workspace/data-access,@workspace/game-server,@workspace/game-h5`
+- `pnpm nx run-many -t typecheck -p @workspace/state,@workspace/game-h5`
 
 ### Completion Notes List
 
@@ -212,6 +214,9 @@ Codex (GPT-5)
 - 已新增 `/beasts/:beastInstanceId` 详情路由与 `BeastDetailPage`，支持权威详情读取、默认队伍切换与明确成功/失败反馈。
 - 已在 `BeastListPage` 增加正式详情入口，并修复默认数组引用导致的重复渲染风险。
 - 已完成 shared/application/game-server/game-h5 的回归测试与静态类型检查，Story 3.2 当前可进入代码评审。
+- 已按 review 修复共享 `PlayerInitSnapshot` 的订阅能力，`App` 改为订阅最新初始化快照，避免 ready 态长期持有旧默认队伍基线。
+- 已在 `BeastDetailPage` 的默认队伍切换成功路径中回写共享玩家快照，使返回列表页且列表刷新失败时仍能显示最新默认队伍标记。
+- 已补跑 `@workspace/state`、`@workspace/game-h5` 与相关 typecheck，确认本轮默认队伍同步修复通过。
 
 ### File List
 
@@ -231,6 +236,8 @@ Codex (GPT-5)
 - libs/client/data-access/src/lib/data-access.ts
 - libs/server/application/src/lib/application.spec.ts
 - libs/server/application/src/lib/application.ts
+- libs/client/state/src/lib/state.spec.ts
+- libs/client/state/src/lib/state.ts
 - libs/shared/contracts/src/lib/contracts.spec.ts
 - libs/shared/contracts/src/lib/contracts.ts
 - libs/shared/schemas/src/lib/schemas.spec.ts
@@ -242,3 +249,4 @@ Codex (GPT-5)
 
 - 2026-04-06: 初始创建 Story 3.2，上下文已补齐，可直接进入开发
 - 2026-04-06: 完成幻兽详情读取、默认队伍配置、共享 H5 详情页与全量验证，状态更新为 review
+- 2026-04-06: 修复 review 暴露的默认队伍同步问题，补齐共享快照订阅与列表回退基线验证

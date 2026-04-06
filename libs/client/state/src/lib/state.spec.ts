@@ -14,6 +14,7 @@ import {
   setPlayerInitSnapshot,
   setActiveSession,
   subscribeAppBootstrapState,
+  subscribePlayerInitSnapshot,
 } from './state.js';
 
 describe('client session state', () => {
@@ -83,6 +84,48 @@ describe('client session state', () => {
 
     expect(setPlayerInitSnapshot(snapshot)).toEqual(snapshot);
     expect(getPlayerInitSnapshot()).toEqual(snapshot);
+  });
+
+  it('tracks the authoritative player initialization snapshot in a subscribable boundary', () => {
+    const snapshot = {
+      accountId: 'acc_001',
+      player: {
+        playerId: 'player_001',
+        playerName: '召唤师0001',
+        level: 1,
+        initializedAt: '2026-04-06T00:00:00.000Z',
+      },
+      resources: {
+        gold: 1000,
+        gem: 100,
+        stamina: 20,
+      },
+      beasts: [
+        {
+          beastInstanceId: 'beast_inst_001',
+          beastId: 'starter-beast-001',
+          beastName: '初始幻兽',
+          level: 1,
+          role: 'starter',
+        },
+      ],
+      defaultTeam: {
+        teamId: 'team_001',
+        name: '默认队伍',
+        beastInstanceIds: ['beast_inst_001'],
+      },
+    };
+    const snapshots = [getPlayerInitSnapshot()];
+    const unsubscribe = subscribePlayerInitSnapshot((nextSnapshot) => {
+      snapshots.push(nextSnapshot);
+    });
+
+    setPlayerInitSnapshot(snapshot);
+    clearPlayerInitSnapshot();
+    unsubscribe();
+    setPlayerInitSnapshot(snapshot);
+
+    expect(snapshots).toEqual([null, snapshot, null]);
   });
 
   it('stores the authoritative inventory snapshot separately from the init snapshot', () => {

@@ -8,6 +8,9 @@ let activeSession: UnifiedSession | null = null;
 let activeInventorySnapshot: InventorySnapshot | null = null;
 let activePlayerInitSnapshot: PlayerInitSnapshot | null = null;
 const bootstrapListeners = new Set<(state: AppBootstrapState) => void>();
+const playerInitSnapshotListeners = new Set<
+  (snapshot: PlayerInitSnapshot | null) => void
+>();
 
 export type AppBootstrapPhase =
   | 'idle'
@@ -43,6 +46,12 @@ function notifyBootstrapListeners(): void {
   }
 }
 
+function notifyPlayerInitSnapshotListeners(): void {
+  for (const listener of playerInitSnapshotListeners) {
+    listener(activePlayerInitSnapshot);
+  }
+}
+
 export function getActiveSession(): UnifiedSession | null {
   return activeSession;
 }
@@ -64,11 +73,22 @@ export function setPlayerInitSnapshot(
   snapshot: PlayerInitSnapshot,
 ): PlayerInitSnapshot {
   activePlayerInitSnapshot = snapshot;
+  notifyPlayerInitSnapshotListeners();
   return activePlayerInitSnapshot;
 }
 
 export function clearPlayerInitSnapshot(): void {
   activePlayerInitSnapshot = null;
+  notifyPlayerInitSnapshotListeners();
+}
+
+export function subscribePlayerInitSnapshot(
+  listener: (snapshot: PlayerInitSnapshot | null) => void,
+): () => void {
+  playerInitSnapshotListeners.add(listener);
+  return () => {
+    playerInitSnapshotListeners.delete(listener);
+  };
 }
 
 export function getInventorySnapshot(): InventorySnapshot | null {

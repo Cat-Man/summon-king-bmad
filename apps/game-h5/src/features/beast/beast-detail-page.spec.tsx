@@ -1,9 +1,14 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type {
   BeastDetailResponse,
   DefaultTeamSetupResponse,
 } from '@workspace/types';
+import {
+  clearPlayerInitSnapshot,
+  getPlayerInitSnapshot,
+  setPlayerInitSnapshot,
+} from '@workspace/state';
 import { BeastDetailPage } from './beast-detail-page';
 
 const ROUTER_FUTURE = {
@@ -12,6 +17,12 @@ const ROUTER_FUTURE = {
 } as const;
 
 describe('BeastDetailPage', () => {
+  afterEach(() => {
+    act(() => {
+      clearPlayerInitSnapshot();
+    });
+  });
+
   it('requests and renders the authoritative beast detail', async () => {
     const fetchBeastDetail = vi.fn(async () => ({
       ok: true,
@@ -131,6 +142,106 @@ describe('BeastDetailPage', () => {
     expect(screen.getByText('默认队伍中')).toBeTruthy();
     expect(screen.getByText('已在队伍中')).toBeTruthy();
     expect(screen.getByText('默认队伍 · 当前 1/1')).toBeTruthy();
+  });
+
+  it('syncs the shared player snapshot after default team setup succeeds', async () => {
+    act(() => {
+      setPlayerInitSnapshot({
+        accountId: 'acc_001',
+        player: {
+          playerId: 'player_001',
+          playerName: '召唤师0001',
+          level: 1,
+          initializedAt: '2026-04-06T00:00:00.000Z',
+        },
+        resources: {
+          gold: 1000,
+          gem: 100,
+          stamina: 20,
+        },
+        beasts: [
+          {
+            beastInstanceId: 'beast_inst_001',
+            beastId: 'starter-beast-001',
+            beastName: '初始幻兽',
+            level: 1,
+            role: 'starter',
+          },
+          {
+            beastInstanceId: 'beast_inst_002',
+            beastId: 'starter-beast-002',
+            beastName: '烈焰狐',
+            level: 3,
+            role: 'damage',
+          },
+        ],
+        defaultTeam: {
+          teamId: 'team_001',
+          name: '默认队伍',
+          beastInstanceIds: ['beast_inst_001'],
+        },
+      });
+    });
+
+    const fetchBeastDetail = vi.fn(async () => ({
+      ok: true,
+      traceId: 'trace-beast-detail-004',
+      beast: {
+        beastInstanceId: 'beast_inst_002',
+        beastId: 'starter-beast-002',
+        beastName: '烈焰狐',
+        level: 3,
+        role: 'damage',
+        inDefaultTeam: false,
+        availableForBattle: true,
+        canSetAsDefault: true,
+      },
+      defaultTeam: {
+        teamId: 'team_001',
+        name: '默认队伍',
+        beastInstanceIds: ['beast_inst_001'],
+        capacity: 1,
+      },
+    } satisfies BeastDetailResponse));
+    const setupDefaultTeam = vi.fn(async () => ({
+      ok: true,
+      traceId: 'trace-beast-setup-003',
+      message: '默认队伍已更新',
+      beast: {
+        beastInstanceId: 'beast_inst_002',
+        beastId: 'starter-beast-002',
+        beastName: '烈焰狐',
+        level: 3,
+        role: 'damage',
+        inDefaultTeam: true,
+        availableForBattle: true,
+        canSetAsDefault: false,
+      },
+      defaultTeam: {
+        teamId: 'team_001',
+        name: '默认队伍',
+        beastInstanceIds: ['beast_inst_002'],
+        capacity: 1,
+      },
+    } satisfies DefaultTeamSetupResponse));
+
+    render(
+      <MemoryRouter future={ROUTER_FUTURE}>
+        <BeastDetailPage
+          beastInstanceId="beast_inst_002"
+          sessionToken="sess_001"
+          fetchBeastDetail={fetchBeastDetail}
+          setupDefaultTeam={setupDefaultTeam}
+        />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: '设为出战' }));
+
+    expect(await screen.findByText('默认队伍已更新')).toBeTruthy();
+    expect(getPlayerInitSnapshot()?.defaultTeam.beastInstanceIds).toEqual([
+      'beast_inst_002',
+    ]);
   });
 
   it('renders the server error message when default team setup fails', async () => {

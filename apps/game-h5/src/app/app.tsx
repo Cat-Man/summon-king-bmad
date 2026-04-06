@@ -12,6 +12,7 @@ import {
   getInventorySnapshot,
   getPlayerInitSnapshot,
   subscribeAppBootstrapState,
+  subscribePlayerInitSnapshot,
 } from '@workspace/state';
 import { initializeAppSession } from '../bootstrap/init-app';
 import { BeastDetailPage } from '../features/beast/beast-detail-page';
@@ -361,7 +362,11 @@ export function App({ onRetry = defaultRetryHandler }: AppProps) {
     subscribeAppBootstrapState,
     getAppBootstrapState,
   );
-  const snapshot = getPlayerInitSnapshot();
+  const snapshot = useSyncExternalStore(
+    subscribePlayerInitSnapshot,
+    getPlayerInitSnapshot,
+    getPlayerInitSnapshot,
+  );
   const activeSession = getActiveSession();
   const inventorySnapshot = getInventorySnapshot();
 

@@ -4,9 +4,14 @@ import {
   fetchBeastDetail as requestBeastDetail,
   setupDefaultTeam as requestSetupDefaultTeam,
 } from '@workspace/data-access';
+import {
+  getPlayerInitSnapshot,
+  setPlayerInitSnapshot,
+} from '@workspace/state';
 import type {
   BeastDetailEntry,
   BeastTeamSummary,
+  DefaultTeamSnapshot,
 } from '@workspace/types';
 import styles from '../../app/app.module.css';
 
@@ -32,6 +37,29 @@ function resolveFeedbackClassName(tone: FeedbackState['tone']): string {
     default:
       return styles.feedbackError;
   }
+}
+
+function toDefaultTeamSnapshot(
+  team: BeastTeamSummary,
+): DefaultTeamSnapshot {
+  return {
+    teamId: team.teamId,
+    name: team.name,
+    beastInstanceIds: [...team.beastInstanceIds],
+  };
+}
+
+function syncSharedPlayerSnapshot(defaultTeam: BeastTeamSummary): void {
+  const snapshot = getPlayerInitSnapshot();
+
+  if (!snapshot) {
+    return;
+  }
+
+  setPlayerInitSnapshot({
+    ...snapshot,
+    defaultTeam: toDefaultTeamSnapshot(defaultTeam),
+  });
 }
 
 export function BeastDetailPage({
@@ -135,6 +163,7 @@ export function BeastDetailPage({
       if (response.ok) {
         setBeast(response.beast);
         setDefaultTeam(response.defaultTeam);
+        syncSharedPlayerSnapshot(response.defaultTeam);
         setErrorMessage(null);
         setFeedback({
           tone: 'success',
